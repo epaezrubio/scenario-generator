@@ -71,7 +71,7 @@ public class Executor {
         percent=0;
         for(int j = 0, total = 10000; j<total; j++) {
 
-            if(i%(total/100)==0){
+            if(j%(total/100)==0){
                 percent++;
                 System.out.println("persons done " + percent + "%");
             }
