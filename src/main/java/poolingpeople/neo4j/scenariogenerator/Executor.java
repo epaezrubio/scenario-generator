@@ -95,7 +95,7 @@ public class Executor {
             inserter.createRelationship(assignee, taskId, assigneRel, null);
 
             for(int k = 0; k<5; k++){
-                inserter.createRelationship(new Random().nextInt(peopleIds.size()), taskId, observerRel, null);
+                inserter.createRelationship(peopleIds.get(new Random().nextInt(peopleIds.size())), taskId, observerRel, null);
             }
 
             if(i%(tasksIds.size()/100)==0){

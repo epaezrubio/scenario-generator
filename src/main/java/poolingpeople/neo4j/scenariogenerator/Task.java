@@ -42,10 +42,10 @@ public class Task {
 
     public Map<String, Object> toMap(){
         Map<String, Object> map = new HashMap<String, Object>();
-        map.put("startDate", startDate.getTime());
-        map.put("endDate", endDate.getTime());
-        map.put("title", title);
-        map.put("description", description);
+//        map.put("startDate", startDate.getTime());
+//        map.put("endDate", endDate.getTime());
+//        map.put("title", title);
+//        map.put("description", description);
         map.put("uuid", uuid);
 
         return map;
