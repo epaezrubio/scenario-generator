@@ -1,5 +1,6 @@
 package poolingpeople.neo4j.scenariogenerator;
 
+import org.neo4j.cypher.internal.compiler.v2_0.functions.Ceil;
 import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Label;
@@ -7,21 +8,61 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.unsafe.batchinsert.BatchInserter;
 import org.neo4j.unsafe.batchinsert.BatchInserters;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.*;
-import java.util.logging.Logger;
 
 /**
  * Created by alacambra on 30.09.14.
  */
 public class Executor {
 
+    private String path;
+    private int totalTasks;
+    private int totalPersons;
+    private int linkingRatio;
+    private int observersPerTask;
+
+
     public static void main(String[] args){
         new Executor().insert();
     }
 
+    public void readProperties(){
+
+        Properties prop = new Properties();
+        InputStream in = getClass().getClassLoader().getResourceAsStream("simple-private-sphere.properties");
+
+        try{
+            prop.load(in);
+            in.close();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+        path = getPropertyOrException("path", prop);
+        totalTasks = Integer.parseInt(getPropertyOrException("total-tasks", prop));
+        totalPersons = Integer.parseInt(getPropertyOrException("total-people", prop));
+        linkingRatio = Integer.parseInt(getPropertyOrException("linking-ratio", prop));
+        observersPerTask = Integer.parseInt(getPropertyOrException("observers-per-task", prop));
+    }
+
+    private String getPropertyOrException(String property, Properties prop){
+
+        String p = prop.getProperty(property);
+
+        if(p == null){
+            throw new RuntimeException(property + " cannot be null:" + prop);
+        }
+
+        return p;
+    }
+
     public void insert() {
 
-        BatchInserter inserter = BatchInserters.inserter("/home/alacambra/neo4j-community-2.1.2/data/graph.db");
+        readProperties();
+
+        BatchInserter inserter = BatchInserters.inserter(this.path);
         Label personLabel = DynamicLabel.label("person");
         Label taskLabel = DynamicLabel.label("task");
         Label uuidLabel = DynamicLabel.label("uuid");
@@ -34,11 +75,11 @@ public class Executor {
 
         RelationshipType linked = DynamicRelationshipType.withName("linked");
 
-        for(int i = 0, total = 1000000, percent = 0; i<total; i++) {
+        for(int i = 0, total = totalTasks, percent = 0; i<total; i++) {
 
-            if(i%(total/100)==0){
+            if(i%(Math.ceil(total/100))==0){
                 percent++;
-                System.out.println("done " + percent + "%");
+                System.out.println("tasks done " + percent + "%");
             }
 
             Task t = new Task();
@@ -49,7 +90,7 @@ public class Executor {
 
         int i = 0, percent=0;
         for(Long origin : tasksIds){
-            for(int j = 0; j<10; j++) {
+            for(int j = 0; j<linkingRatio; j++) {
 
                 Long target = tasksIds.get(new Random().nextInt(tasksIds.size()));
 
@@ -60,18 +101,17 @@ public class Executor {
                 inserter.createRelationship(origin, target, linked, null);
             }
 
-            if(i%(tasksIds.size()/100)==0){
+            if(i%(Math.ceil(tasksIds.size()/100))==0){
                 percent++;
                 System.out.println("links done " + percent + "%");
             }
             i++;
         }
 
-        i = 0;
         percent=0;
-        for(int j = 0, total = 10000; j<total; j++) {
+        for(int j = 0; j<totalPersons; j++) {
 
-            if(j%(total/100)==0){
+            if(j%(Math.ceil(totalPersons/100))==0){
                 percent++;
                 System.out.println("persons done " + percent + "%");
             }
@@ -94,8 +134,9 @@ public class Executor {
             inserter.createRelationship(owner, taskId, ownerRel, null);
             inserter.createRelationship(assignee, taskId, assigneRel, null);
 
-            for(int k = 0; k<5; k++){
-                inserter.createRelationship(peopleIds.get(new Random().nextInt(peopleIds.size())), taskId, observerRel, null);
+            for(int k = 0; k < observersPerTask; k++){
+                inserter.createRelationship(peopleIds.get(
+                        new Random().nextInt(peopleIds.size())), taskId, observerRel, null);
             }
 
             if(i%(tasksIds.size()/100)==0){
