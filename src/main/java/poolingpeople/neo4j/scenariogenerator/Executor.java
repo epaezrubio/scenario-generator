@@ -1,6 +1,6 @@
 package poolingpeople.neo4j.scenariogenerator;
 
-import org.neo4j.cypher.internal.compiler.v2_0.functions.Ceil;
+import org.apache.commons.cli.*;
 import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Label;
@@ -8,6 +8,8 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.unsafe.batchinsert.BatchInserter;
 import org.neo4j.unsafe.batchinsert.BatchInserters;
 
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
@@ -24,14 +26,35 @@ public class Executor {
     private int observersPerTask;
 
 
-    public static void main(String[] args){
-        new Executor().insert();
+    public static void main(String[] args) throws ParseException {
+
+        CommandLine commandLine;
+        Option optionPropertiesFile = OptionBuilder
+                .withArgName("properties").hasArg()
+                .withDescription("Path to the properties file")
+                .isRequired().create("p");
+
+        Options options = new Options();
+        options.addOption(optionPropertiesFile);
+        CommandLineParser parser = new GnuParser();
+
+        Executor executor = new Executor();
+        commandLine = parser.parse(options, args);
+//        System.out.println(commandLine.getOptionValue("p"));
+        executor.readProperties(commandLine.getOptionValue("p"));
+
+        executor.insert();
     }
 
-    public void readProperties(){
+    public void readProperties(String propertiesFile){
 
         Properties prop = new Properties();
-        InputStream in = getClass().getClassLoader().getResourceAsStream("simple-private-sphere.properties");
+        InputStream in = null;
+        try {
+            in = new FileInputStream(propertiesFile);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
 
         try{
             prop.load(in);
@@ -59,8 +82,6 @@ public class Executor {
     }
 
     public void insert() {
-
-        readProperties();
 
         BatchInserter inserter = BatchInserters.inserter(this.path);
         Label personLabel = DynamicLabel.label("person");
