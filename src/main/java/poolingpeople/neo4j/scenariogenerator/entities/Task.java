@@ -1,4 +1,4 @@
-package poolingpeople.neo4j.scenariogenerator;
+package poolingpeople.neo4j.scenariogenerator.entities;
 
 import java.util.*;
 
